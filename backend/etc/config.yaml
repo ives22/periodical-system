@@ -1,0 +1,11 @@
+App:
+  HttpHost: "0.0.0.0"
+  HttpPort: 8001
+SQLite:
+  DBPath: "db/MonitorAlert.db"
+MySQL:
+  Host: "127.0.0.1"
+  Port: 3306
+  Username: "root"
+  Password: "Ives.123zaq"
+  Database: "books"
