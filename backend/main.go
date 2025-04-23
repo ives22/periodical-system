@@ -3,13 +3,15 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/gin-contrib/cors"
 	"periodical/conf"
 	periodicalApi "periodical/internal/apps/periodical/api"
 	periodicalImpl "periodical/internal/apps/periodical/impl"
 	"periodical/internal/apps/token/api"
 	tokenImpl "periodical/internal/apps/token/impl"
 	userApi "periodical/internal/apps/user/api"
+
+	"github.com/gin-contrib/cors"
+
 	//userImpl "promalert/internal/apps/user/impl"
 	userImpl "periodical/internal/apps/user/impl"
 )
@@ -50,11 +52,17 @@ func main() {
 	// 启动http协议服务器，注册handler路由
 	r := gin.Default()
 
-	r.Use(cors.Default())
+	//r.Use(cors.Default())
+	r.Use(cors.New(cors.Config{
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"*"},
+		AllowCredentials: true,
+	}))
 
-	tkApi.Registry(r) // token handler
-	pApi.Registry(r)  // 期刊handler
-	uApi.Registry(r)  // 用户handler
+	tkApi.Registry(r)              // token handler
+	pApi.Registry(r, tokenSvcImpl) // 期刊handler
+	uApi.Registry(r)               // 用户handler
 
 	r.Run(conf.C().App.HttpAddr())
 }

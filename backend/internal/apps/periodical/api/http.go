@@ -2,10 +2,13 @@ package api
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"periodical/internal/apps/periodical"
+	"periodical/internal/apps/token"
+	"periodical/internal/middleware"
 	"periodical/internal/response"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PeriodicalApiHandler struct {
@@ -19,8 +22,9 @@ func NewPeriodicalApiHandler(svc periodical.Service) *PeriodicalApiHandler {
 	}
 }
 
-func (h *PeriodicalApiHandler) Registry(r gin.IRouter) {
+func (h *PeriodicalApiHandler) Registry(r gin.IRouter, tokenSvc token.Service) {
 	v1 := r.Group("v1").Group("periodical")
+	v1.Use(middleware.Auth(tokenSvc)) // 添加认证中间件
 	// POST /v1/periodical
 	v1.POST("", h.CreatePeriodicalHandler)
 	// POST /v1/periodical/list
@@ -85,6 +89,12 @@ func (h *PeriodicalApiHandler) QueryPeriodicalHandler(ctx *gin.Context) {
 
 	if err := ctx.ShouldBind(in); err != nil {
 		response.Failed(ctx, response.CodeInvalidParam)
+		return
+	}
+
+	// 验证排序字段
+	if err := in.ValidateOrderBy(); err != nil {
+		response.FailedWhitMsg(ctx, response.CodeInvalidParam, err.Error())
 		return
 	}
 

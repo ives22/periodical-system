@@ -1,10 +1,11 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"periodical/internal/apps/token"
 	"periodical/internal/response"
+
+	"github.com/gin-gonic/gin"
 )
 
 type TokenApiHandler struct {

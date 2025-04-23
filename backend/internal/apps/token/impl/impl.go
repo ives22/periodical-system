@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"log"
 	"periodical/conf"
 	"periodical/internal/apps/token"
 	"periodical/internal/apps/user"
+
+	"gorm.io/gorm"
 )
 
 type TokenImpl struct {
@@ -31,8 +32,6 @@ func (i *TokenImpl) Login(ctx context.Context, req *token.LoginRequest) (*token.
 	if err != nil {
 		return nil, err
 	}
-
-	log.Println(uReq, "aaaa")
 
 	// 2. 比对密码
 	err = u.CheckPassword(req.Password)
@@ -83,13 +82,20 @@ func (i *TokenImpl) ValidateToken(ctx context.Context, req *token.ValidateToken)
 		return nil, err
 	}
 
-	// 2. 判断token合法性
-	// 2.1 判断AK是否过期
+	log.Println("校验token")
+	log.Println(tk)
+	// 2. 判断token是否被禁用
+	if tk.IsEnable != 1 {
+		return nil, errors.New("token已失效")
+	}
+
+	// 3. 判断token合法性
+	// 3.1 判断AK是否过期
 	if err = tk.IsExpired(); err != nil {
 		return nil, err
 	}
 
-	// 2.2 补充用户信息，只是为了补充用户的角色
+	// 3.2 补充用户信息，只是为了补充用户的角色
 	uDesc := user.NewDescribeUserRequestById(fmt.Sprintf("%d", tk.UserId))
 	u, err := i.user.DescribeUser(ctx, uDesc)
 	if err != nil {

@@ -1,6 +1,9 @@
 package periodical
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // Service 定义期刊的接口
 type Service interface {
@@ -44,9 +47,12 @@ type QueryPeriodicalRequest struct {
 	CompetentUnit            string         `json:"competent_unit"`             // 主管单位， 根据主管单位搜索
 	Organization             string         `json:"organization"`               // 主办单位  根据主办单位搜索
 	Works                    int            `json:"works"`                      // 是否是作品，根据是否是作品搜索 1 搜索 true，2 搜索 false，3 不加该条件搜索
+	IsWarp                   int            `json:"is_warp"`                    // 是否全包，根据是否是全包搜索， 1 搜索 true，2 搜索 false，3 不加该条件搜索
 	PeriodicalBatch          []int64        `json:"periodical_batch"`           // 期刊批次，1、2  第一批次；第二批次
 	CompositeInfluenceFactor float64        `json:"composite_influence_factor"` // 复合影响因子，根据复合影响因子筛选 -99 表示0以上
 	ColumnSetting            string         `json:"column_setting"`             // 栏目设置搜索
+	OrderBy                  string         `json:"order_by"`                   // 排序字段
+	OrderDesc                string         `json:"order_desc"`                 // 排序方向， ascending 升序，descending 降序
 }
 
 // hasBaseType 查询期刊时候，所携带的分类信息， 通用分类的ID和 类型（type）
@@ -103,6 +109,27 @@ func NewDeletePeriodicalRequest(id string) *DeletePeriodicalRequest {
 
 func (r *QueryPeriodicalRequest) Offset() int {
 	return r.PageSize * (r.PageNumber - 1)
+}
+
+// ValidateOrderBy 校验排序字段是否在允许的排序字段中
+func (r *QueryPeriodicalRequest) ValidateOrderBy() error {
+	if r.OrderBy == "" {
+		return nil
+	}
+
+	// 允许排序的字段列表
+	validFields := map[string]bool{
+		"publication_time": true,
+		"updated_at":       true,
+		"periodical_page":  true,
+		"price":            true,
+		// 添加其他允许排序的字段
+	}
+
+	if !validFields[r.OrderBy] {
+		return fmt.Errorf("invalid order_by field: %s", r.OrderBy)
+	}
+	return nil
 }
 
 //=============== Categorize 相关请求参数结构体

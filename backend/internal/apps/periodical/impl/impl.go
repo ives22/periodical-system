@@ -83,13 +83,43 @@ func (i *PeriodicalImpl) QueryPeriodical(ctx context.Context, req *periodical.Qu
 		Joins("JOIN periodical_categorize AS pc ON periodicals.periodical_id = pc.periodical_id").
 		Joins("JOIN categorizes ON pc.categorize_id = categorizes.categorize_id")
 
-	// 如果HasBaseTypeList有值, 构建IN条件的值
+	// 	// 如果HasBaseTypeList有值, 构建AND连接的等值条件
+	// if len(req.HasBaseTypeList) > 0 {
+	// 	var categorizeIDs []int64
+	// 	for _, baseType := range req.HasBaseTypeList {
+	// 		categorizeIDs = append(categorizeIDs, int64(baseType.BaseId))
+	// 	}
+
+	// 	// 使用子查询确保期刊同时属于所有指定的分类
+	// 	for _, id := range categorizeIDs {
+	// 		subQuery := i.db.Table("periodical_categorize").
+	// 			Select("periodical_id").
+	// 			Where("categorize_id = ?", id)
+
+	// 		query = query.Where("periodicals.periodical_id IN (?)", subQuery)
+	// 	}
+	// }
+
+	// 如果HasBaseTypeList有值, 构建AND连接的等值条件
 	if len(req.HasBaseTypeList) > 0 {
-		var categorizeIDs []int64
+		// 按 type 分组
+		typeGroups := make(map[int64][]int64)
 		for _, baseType := range req.HasBaseTypeList {
-			categorizeIDs = append(categorizeIDs, int64(baseType.BaseId))
+			typeKey := int64(baseType.Type)
+			typeGroups[typeKey] = append(typeGroups[typeKey], int64(baseType.BaseId))
 		}
-		query = query.Where("categorizes.categorize_id IN ?", categorizeIDs)
+
+		// 为每个 type 组创建条件
+		for _, baseIDs := range typeGroups {
+			// 创建当前 type 组的子查询，添加与主查询的关联条件
+			subQuery := i.db.Table("periodical_categorize").
+				Select("1").                                        // 只需要检查是否存在
+				Where("periodical_id = periodicals.periodical_id"). // 关联条件
+				Where("categorize_id IN ?", baseIDs)
+
+			// 使用 EXISTS 子查询
+			query = query.Where("EXISTS (?)", subQuery)
+		}
 	}
 
 	// 根据期刊批次查询
@@ -108,6 +138,11 @@ func (i *PeriodicalImpl) QueryPeriodical(ctx context.Context, req *periodical.Qu
 		query = query.Where("periodicals.works = '1'")
 	} else if req.Works == 2 {
 		query = query.Where("periodicals.works = '0'")
+	}
+	if req.IsWarp == 1 {
+		query = query.Where("periodicals.is_warp = '1'")
+	} else if req.IsWarp == 2 {
+		query = query.Where("periodicals.is_warp = '0'")
 	}
 	if req.Name != "" {
 		query = query.Where("periodicals.name like ?", "%"+req.Name+"%")
@@ -131,12 +166,51 @@ func (i *PeriodicalImpl) QueryPeriodical(ctx context.Context, req *periodical.Qu
 	if req.ColumnSetting != "" {
 		query = query.Where("periodicals.column_setting like ?", "%"+req.ColumnSetting+"%")
 	}
+
+	// 复合影响因子查询
 	if req.CompositeInfluenceFactor != 0 {
 		if req.CompositeInfluenceFactor == -99 {
-			query = query.Where("periodicals.composite_influence_factor >= ?", 0)
+			// 查询所有有影响因子的期刊（大于0的）
+			query = query.Where(`
+            CAST(
+                CASE 
+                    WHEN composite_influence_factor REGEXP '^[0-9]' 
+                    THEN LEFT(composite_influence_factor, 
+                            CASE 
+                                WHEN LOCATE('(', composite_influence_factor) > 0 
+                                THEN LOCATE('(', composite_influence_factor) - 1
+                                ELSE LENGTH(composite_influence_factor)
+                            END)
+                    ELSE '0'
+                END 
+            AS DECIMAL(10,3)) > 0`)
 		} else {
-			query = query.Where("periodicals.composite_influence_factor >= ?", req.CompositeInfluenceFactor)
+			// 查询大于等于指定影响因子的期刊
+			query = query.Where(`
+            CAST(
+                CASE 
+                    WHEN composite_influence_factor REGEXP '^[0-9]' 
+                    THEN LEFT(composite_influence_factor, 
+                            CASE 
+                                WHEN LOCATE('(', composite_influence_factor) > 0 
+                                THEN LOCATE('(', composite_influence_factor) - 1
+                                ELSE LENGTH(composite_influence_factor)
+                            END)
+                    ELSE '0'
+                END 
+            AS DECIMAL(10,3)) >= ?`, req.CompositeInfluenceFactor)
 		}
+	}
+
+	// 添加排序条件
+	if req.OrderBy != "" {
+		orderStr := "periodicals." + req.OrderBy
+		if req.OrderDesc == "ascending" {
+			orderStr += " ASC"
+		} else if req.OrderDesc == "descending" {
+			orderStr += " DESC"
+		}
+		query = query.Order(orderStr)
 	}
 
 	query = query.Preload("Categorizes") // 使用Preload预加载关联的分类信息
@@ -197,6 +271,7 @@ func (i *PeriodicalImpl) UpdatePeriodical(ctx context.Context, req *periodical.U
 		log.Println("部分更新")
 	}
 
+	log.Println("更新。。。。。")
 	// 更新期刊信息
 	if err := i.db.Save(ins).Error; err != nil {
 		return nil, err

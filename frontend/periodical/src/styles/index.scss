@@ -1,0 +1,38 @@
+// 引入清除默认样式
+@use "./reset.scss";
+
+// 滚动条样式
+::-webkit-scrollbar {
+    width: 8px; // 滚动条宽度
+    height: 8px; // 水平滚动条高度
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1; // 轨道背景色
+    border-radius: 4px; // 圆角
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1; // 滑块颜色
+    border-radius: 4px; // 圆角
+
+    &:hover {
+        background: #a8a8a8; // 悬停时的颜色
+    }
+}
+
+// 当滚动条处于激活状态时
+::-webkit-scrollbar-thumb:active {
+    background: #909090; // 激活时的颜色
+}
+
+//  ::-webkit-scrollbar-track {
+//      //  background: $baseMenuBackground;
+//      background: red;
+//  }
+
+//  ::-webkit-scrollbar-thumb {
+//      width: 10px;
+//      //  background: red;
+//      border-radius: 10px;
+//  }
