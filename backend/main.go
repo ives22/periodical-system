@@ -15,6 +15,7 @@ import (
 	//userImpl "promalert/internal/apps/user/impl"
 	userImpl "periodical/internal/apps/user/impl"
 )
+// 222
 
 func main() {
 	if err := conf.LoadConfigFromYaml("etc/config.yaml"); err != nil {
