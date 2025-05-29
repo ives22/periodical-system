@@ -11,7 +11,7 @@ import (
 func NewToken() *Token {
 	return &Token{
 		AccessToken:           xid.New().String(),
-		AccessTokenExpiredAt:  7200,
+		AccessTokenExpiredAt:  3600 * 24,
 		RefreshToken:          xid.New().String(),
 		RefreshTokenExpiredAt: 3600 * 24 * 7,
 		CreatedAt:             time.Now().Unix(),
