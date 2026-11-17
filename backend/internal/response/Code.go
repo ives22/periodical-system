@@ -8,6 +8,7 @@ const (
 	CodeServerBusy
 	CodeUnauthorized = 401 // 未授权
 	CodeTokenExpired = 402 // token 过期
+	CodeForbidden    = 403 // 无权访问
 )
 
 var CodeMsgMap = map[ResCode]string{
@@ -16,6 +17,7 @@ var CodeMsgMap = map[ResCode]string{
 	CodeServerBusy:   "服务器错误",
 	CodeUnauthorized: "未授权",
 	CodeTokenExpired: "Token已经过期",
+	CodeForbidden:    "无权限执行此操作",
 }
 
 func (c ResCode) Msg() string {

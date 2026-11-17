@@ -32,6 +32,7 @@ type BasePeriodical struct {
 	SyntheticInfluenceFactor string `json:"synthetic_influence_factor"` // 综合影响因子
 	PeriodicalBatch          int64  `json:"periodical_batch"`           //期刊批次  1 or 2
 	Works                    bool   `json:"works"`                      // 可发作品    false 0 ， true 1 可发
+	IsHidden                 bool   `json:"is_hidden" gorm:"column:is_hidden;default:0"` // 是否隐藏 false 0 正常显示，true 1 已隐藏
 	PeriodicalFinalProof     string `json:"periodical_final_proof"`     // 期刊清样
 	AuthorInfo               string `json:"author_info"`                // 作者数量于样刊相关
 	//Details                  string `json:"details"`                    // 期刊详情

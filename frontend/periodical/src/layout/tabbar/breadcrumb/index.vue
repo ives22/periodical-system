@@ -1,43 +1,107 @@
 <template>
-    <!-- 顶部左侧的静态 -->
-    <el-icon style="margin-right: 10px;" @click="changeIcon">
-        <component :is="layOutSettingStore.fold ? 'Expand' : 'Fold'"></component>
-    </el-icon>
-    <!-- 左侧面包屑 -->
-    <el-breadcrumb separator-icon="ArrowRight">
-        <!-- <el-breadcrumb-item :to="{ path: '/' }">homepage</el-breadcrumb-item> -->
-        <!-- 面包屑动态展示路由名字与标题 -->
-        <el-breadcrumb-item v-for="(item, index) in $route.matched" :key="index" v-show="item.meta.title"
-            :to="item.path">
-            <!-- 图标 -->
-            <el-icon style="vertical-align: top; margin-right:2px;">
-                <component v-if="item.meta.title" :is="item.meta.icon"></component>
+    <div class="breadcrumb-bar">
+        <button
+            class="collapse-btn"
+            type="button"
+            :title="layOutSettingStore.fold ? '展开导航' : '收起导航'"
+            @click="changeIcon"
+        >
+            <el-icon :size="17">
+                <component :is="layOutSettingStore.fold ? 'Expand' : 'Fold'" />
             </el-icon>
-            <span>{{ item.meta.title }}</span>
-        </el-breadcrumb-item>
-    </el-breadcrumb>
+        </button>
+
+        <el-breadcrumb separator="/">
+            <el-breadcrumb-item :to="{ path: '/home' }">
+                <span class="crumb-item root-crumb">
+                    <el-icon class="crumb-icon"><HomeFilled /></el-icon>
+                    <span>期刊管理系统</span>
+                </span>
+            </el-breadcrumb-item>
+
+            <el-breadcrumb-item
+                v-for="(item, index) in matchedCrumbs"
+                :key="item.path || index"
+                :to="item.redirect ? item.redirect : item.path"
+            >
+                <span class="crumb-item" :class="{ 'is-current': index === matchedCrumbs.length - 1 }">
+                    <span>{{ item.meta.title }}</span>
+                </span>
+            </el-breadcrumb-item>
+        </el-breadcrumb>
+    </div>
 </template>
 
 <script lang="ts" setup>
-import { useRoute } from 'vue-router';
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import useLayOutSettingStore from '@/store/modules/setting'
-// 获取layout配置相关的仓库
-let layOutSettingStore = useLayOutSettingStore()
-// 获取路由对象
-let $route = useRoute()
 
-// 点击修改图标的方法
+const layOutSettingStore = useLayOutSettingStore()
+const $route = useRoute()
+
+const matchedCrumbs = computed(() => {
+    return $route.matched.filter((item) => item.meta && item.meta.title)
+})
+
 const changeIcon = () => {
     layOutSettingStore.fold = !layOutSettingStore.fold
 }
-
-
 </script>
 
 <script lang="ts">
 export default {
-    name: 'Breadcrumb'
+    name: 'Breadcrumb',
 }
 </script>
 
-<style scoped></style>
+<style scoped lang="scss">
+.breadcrumb-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .collapse-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 7px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+            color: #0f172a;
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+    }
+
+    .crumb-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748b;
+
+        &.root-crumb {
+            color: #475569;
+        }
+
+        &.is-current {
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        .crumb-icon {
+            font-size: 14px;
+            color: #64748b;
+        }
+    }
+}
+</style>

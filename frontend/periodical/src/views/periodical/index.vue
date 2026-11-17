@@ -9,9 +9,14 @@
         <div class="container">
             <div class="column">
                 <div class="column-left">
-                    <el-form>
-                        <el-row :gutter="20">
-                            <el-col :span="12">
+                    <div class="filter-panel-header">
+                        <span class="panel-title">多维条件筛选</span>
+                        <el-button link type="primary" size="small" @click="handleReset">清空筛选</el-button>
+                    </div>
+
+                    <el-form class="date-filter-box">
+                        <el-row :gutter="10">
+                            <el-col :span="13">
                                 <span class="form-label">出刊月份</span>
                                 <el-form-item>
                                     <el-date-picker v-model="searchForm.publish_month" type="month" placeholder="选择月份"
@@ -19,10 +24,10 @@
                                         @change="handleMonthChange" class="month-picker" />
                                 </el-form-item>
                             </el-col>
-                            <el-col :span="12">
-                                <span class="form-label">出刊时间</span>
+                            <el-col :span="11">
+                                <span class="form-label">出刊旬期</span>
                                 <el-form-item>
-                                    <el-select v-model="searchForm.publish_period" placeholder="请选择"
+                                    <el-select v-model="searchForm.publish_period" placeholder="全部"
                                         :disabled="!searchForm.publish_month" @change="handlePeriodChange" clearable
                                         class="period-select">
                                         <el-option label="月初" value="1" />
@@ -39,7 +44,10 @@
                     <!-- 收稿方向 -->
                     <div class="direction-wrapper">
                         <div class="direction-header">
-                            <div class="direction-title">收稿方向</div>
+                            <div class="direction-title">
+                                收稿方向
+                                <span v-if="checkedCities.length" class="count-badge">{{ checkedCities.length }}</span>
+                            </div>
                             <el-checkbox v-model="checkAll" :indeterminate="isIndeterminate"
                                 @change="handleCheckAllChange" class="check-all">
                                 全部
@@ -59,7 +67,10 @@
                     <!-- 网站收录 -->
                     <div class="direction-wrapper">
                         <div class="direction-header">
-                            <div class="direction-title">网站收录</div>
+                            <div class="direction-title">
+                                网站收录
+                                <span v-if="checkedCollection.length" class="count-badge">{{ checkedCollection.length }}</span>
+                            </div>
                             <el-checkbox v-model="collectionAll" :indeterminate="collectionIsIndeterminate"
                                 @change="handleCollectionCheckAllChange" class="check-all">
                                 全部
@@ -79,7 +90,10 @@
                     <!-- 期刊级别 -->
                     <div class="direction-wrapper">
                         <div class="direction-header">
-                            <div class="direction-title">期刊级别</div>
+                            <div class="direction-title">
+                                期刊级别
+                                <span v-if="checkedLevels.length" class="count-badge">{{ checkedLevels.length }}</span>
+                            </div>
                             <el-checkbox v-model="levelCheckAll" :indeterminate="levelIsIndeterminate"
                                 @change="handleLevelCheckAllChange" class="check-all">
                                 全部
@@ -99,7 +113,10 @@
                     <!-- 出版周期 -->
                     <div class="direction-wrapper">
                         <div class="direction-header">
-                            <div class="direction-title">出版周期</div>
+                            <div class="direction-title">
+                                出版周期
+                                <span v-if="checkedCycles.length" class="count-badge">{{ checkedCycles.length }}</span>
+                            </div>
                             <el-checkbox v-model="cycleCheckAll" :indeterminate="cycleIsIndeterminate"
                                 @change="handleCycleCheckAllChange" class="check-all">
                                 全部
@@ -119,68 +136,46 @@
                     <!-- 学术期刊 -->
                     <div class="direction-wrapper">
                         <div class="direction-header">
-                            <div class="direction-title">学术期刊</div>
+                            <div class="direction-title">学术期刊批次</div>
                         </div>
                         <el-checkbox-group v-model="checkedAcademicJournals" @change="handleAcademicJournalsChange"
                             class="direction-group">
-                            <el-checkbox :value="1" class="direction-item">第一批学术期刊</el-checkbox>
-                            <el-checkbox :value="2" class="direction-item">第二批学术期刊</el-checkbox>
+                            <el-checkbox :value="1" class="direction-item">第一批学术</el-checkbox>
+                            <el-checkbox :value="2" class="direction-item">第二批学术</el-checkbox>
                         </el-checkbox-group>
                     </div>
 
                     <!-- 发票选项 -->
                     <div class="direction-wrapper">
                         <div class="direction-header">
-                            <div class="direction-title">发票</div>
+                            <div class="direction-title">发票服务</div>
                         </div>
                         <el-checkbox-group v-model="canIssueInvoice" @change="handleInvoiceChange">
-                            <el-checkbox :value="1" class="direction-item">可开杂志社发票</el-checkbox>
+                            <el-checkbox :value="1" class="direction-item" style="width: 100%;">可开杂志社发票</el-checkbox>
                         </el-checkbox-group>
                     </div>
 
-                    <!-- 可否发布作品 -->
-                    <div class="direction-wrapper">
-                        <div class="direction-header">
-                            <div class="direction-title">作品</div>
-                        </div>
-                        <el-radio-group v-model="canPublishWorks" class="direction-group"
-                            @change="handlePublishWorksChange">
-                            <el-radio :value="true">可</el-radio>
-                            <el-radio :value="false">否</el-radio>
-                        </el-radio-group>
-                    </div>
-
-                    <!-- 全包筛选 -->
-                    <div class="direction-wrapper">
-                        <div class="direction-header">
-                            <div class="direction-title">全包</div>
-                        </div>
-                        <el-radio-group v-model="isWrap" class="direction-group" @change="handleWrapChange">
-                            <el-radio :value="true">是</el-radio>
-                            <el-radio :value="false">否</el-radio>
-                        </el-radio-group>
-                    </div>
-
-                    <!-- 作品和全包筛选 -->
-                    <!-- <div class="direction-wrapper">
-                        <div class="filter-row">
-                            <div class="filter-item">
-                                <div class="direction-title">作品</div>
-                                <el-radio-group v-model="canPublishWorks" class="direction-group"
-                                    @change="handlePublishWorksChange">
-                                    <el-radio :value="true">可</el-radio>
-                                    <el-radio :value="false">否</el-radio>
-                                </el-radio-group>
+                    <!-- 可否发布作品 & 全包筛选 紧凑双列 -->
+                    <div class="direction-wrapper compact-dual-row">
+                        <div class="dual-col">
+                            <div class="direction-header">
+                                <div class="direction-title">可发作品</div>
                             </div>
-                            <div class="filter-item">
-                                <div class="direction-title">全包</div>
-                                <el-radio-group v-model="isWrap" class="direction-group" @change="handleWrapChange">
-                                    <el-radio :value="true">是</el-radio>
-                                    <el-radio :value="false">否</el-radio>
-                                </el-radio-group>
-                            </div>
+                            <el-radio-group v-model="canPublishWorks" @change="handlePublishWorksChange">
+                                <el-radio :value="true">可</el-radio>
+                                <el-radio :value="false">否</el-radio>
+                            </el-radio-group>
                         </div>
-                    </div> -->
+                        <div class="dual-col">
+                            <div class="direction-header">
+                                <div class="direction-title">是否全包</div>
+                            </div>
+                            <el-radio-group v-model="isWrap" @change="handleWrapChange">
+                                <el-radio :value="true">是</el-radio>
+                                <el-radio :value="false">否</el-radio>
+                            </el-radio-group>
+                        </div>
+                    </div>
 
                     <!-- 复合影响因子 -->
                     <div class="direction-wrapper">
@@ -195,158 +190,220 @@
                         </el-radio-group>
                     </div>
 
+                    <!-- 隐藏状态筛选（仅具备编辑权限的管理员可见） -->
+                    <div v-if="userStore.hasPermission('periodical:update')" class="direction-wrapper">
+                        <div class="direction-header">
+                            <div class="direction-title">隐藏状态</div>
+                        </div>
+                        <el-radio-group v-model="hiddenFilter" class="direction-group" @change="handleHiddenFilterChange">
+                            <el-radio :value="0">全部</el-radio>
+                            <el-radio :value="2">未隐藏</el-radio>
+                            <el-radio :value="1">已隐藏</el-radio>
+                        </el-radio-group>
+                    </div>
+
                 </div>
 
                 <div class="column-right">
-                    <!-- 搜索表单 -->
-                    <el-form :model="searchForm" ref="searchFormRef" class="search-form" :inline="true"
+                    <!-- 高级搜索面板 -->
+                    <el-form :model="searchForm" ref="searchFormRef" class="search-form" label-width="72px"
                         @submit.prevent="handleSearch">
-                        <el-row :gutter="20">
-                            <el-col :span="6">
+                        <el-row :gutter="16" align="middle">
+                            <el-col :xs="24" :sm="12" :md="6">
                                 <el-form-item label="期刊名称" prop="name">
-                                    <el-input v-model="searchForm.name" placeholder="请输入期刊名称" clearable
-                                        @keyup.enter="handleSearch" />
+                                    <el-input v-model="searchForm.name" placeholder="搜索期刊名称..." clearable
+                                        prefix-icon="Search" @keyup.enter="handleSearch" />
                                 </el-form-item>
                             </el-col>
-                            <el-col :span="6">
+                            <el-col :xs="24" :sm="12" :md="6">
                                 <el-form-item label="主办单位" prop="sponsor">
-                                    <el-input v-model="searchForm.organization" placeholder="请输入主办单位" clearable
+                                    <el-input v-model="searchForm.organization" placeholder="输入主办单位..." clearable
                                         @keyup.enter="handleSearch" />
                                 </el-form-item>
                             </el-col>
-                            <el-col :span="6">
+                            <el-col :xs="24" :sm="12" :md="6">
                                 <el-form-item label="主管单位" prop="supervisor">
-                                    <el-input v-model="searchForm.competent_unit" placeholder="请输入主管单位" clearable
+                                    <el-input v-model="searchForm.competent_unit" placeholder="输入主管单位..." clearable
                                         @keyup.enter="handleSearch" />
                                 </el-form-item>
                             </el-col>
 
-                            <el-col :span="6">
-                                <el-form-item>
-                                    <el-button type="primary" @click="handleSearch" plain>搜索</el-button>
-                                    <el-button @click="handleReset" plain>重置</el-button>
-                                    <el-button link @click="isExpand = !isExpand">
-                                        {{ isExpand ? '收起' : '展开' }}
-                                        <el-icon>
+                            <el-col :xs="24" :sm="12" :md="6">
+                                <div class="search-actions">
+                                    <el-button type="primary" icon="Search" @click="handleSearch">搜索</el-button>
+                                    <el-button icon="RefreshLeft" @click="handleReset">重置</el-button>
+                                    <el-button class="expand-toggle" link type="primary" @click="isExpand = !isExpand">
+                                        {{ isExpand ? '收起' : '更多' }}
+                                        <el-icon class="el-icon--right">
                                             <component :is="isExpand ? 'ArrowUp' : 'ArrowDown'" />
                                         </el-icon>
                                     </el-button>
-                                </el-form-item>
+                                </div>
                             </el-col>
                         </el-row>
 
-                        <!-- 展开/收起的表单项 -->
-                        <template v-if="isExpand">
-                            <el-row :gutter="20">
-                                <el-col :span="6">
+                        <!-- 展开/收起的更多筛选项 -->
+                        <div v-if="isExpand" class="expanded-search-row">
+                            <el-row :gutter="16">
+                                <el-col :xs="24" :sm="12" :md="6">
                                     <el-form-item label="国内刊号" prop="domestic_number">
-                                        <el-input v-model="searchForm.domestic_number" placeholder="请输入国内刊号" clearable
+                                        <el-input v-model="searchForm.domestic_number" placeholder="如：23-1558/C" clearable
                                             @keyup.enter="handleSearch" />
                                     </el-form-item>
                                 </el-col>
-                                <el-col :span="6">
+                                <el-col :xs="24" :sm="12" :md="6">
                                     <el-form-item label="国际刊号" prop="international_number">
-                                        <el-input v-model="searchForm.international_number" placeholder="请输入国际刊号"
+                                        <el-input v-model="searchForm.international_number" placeholder="如：1674-7879"
                                             clearable @keyup.enter="handleSearch" />
                                     </el-form-item>
                                 </el-col>
-                                <el-col :span="6">
+                                <el-col :xs="24" :sm="12" :md="6">
                                     <el-form-item label="栏目设置" prop="column_setting">
-                                        <el-input v-model="searchForm.column_setting" placeholder="请输入栏目设置" clearable
+                                        <el-input v-model="searchForm.column_setting" placeholder="搜索栏目关键字..." clearable
                                             @keyup.enter="handleSearch" />
                                     </el-form-item>
                                 </el-col>
                             </el-row>
-                        </template>
+                        </div>
                     </el-form>
 
-                    <!-- 新增操作栏 -->
-                    <div class="operation-bar" v-if="userStore.loginUser.role === 1">
-                        <el-button type="primary" plain @click="handleAdd">
-                            <el-icon>
-                                <Plus />
-                            </el-icon> 新增
-                        </el-button>
+                    <!-- 表格工具栏 -->
+                    <div class="table-toolbar">
+                        <div class="toolbar-left">
+                            <h3 class="table-title">期刊目录列表</h3>
+                            <span class="total-pill">共 <strong>{{ total }}</strong> 本刊物</span>
+                        </div>
+                        <div class="toolbar-right" v-if="userStore.hasPermission('periodical:create')">
+                            <el-button type="primary" icon="Plus" @click="handleAdd">
+                                新增期刊
+                            </el-button>
+                        </div>
                     </div>
 
                     <!-- 期刊列表表格 -->
                     <div class="table-container">
-                        <el-table :data="periodicalArr" border @sort-change="sortChange" style="width: 100%"
+                        <el-table :data="periodicalArr" stripe @sort-change="sortChange" style="width: 100%"
+                            :row-class-name="getTableRowClassName"
                             v-loading="tableLoading">
-                            <el-table-column prop="name" label="期刊名称" show-overflow-tooltip>
+                            <el-table-column prop="name" label="期刊名称" min-width="230" show-overflow-tooltip>
                                 <template #default="{ row }">
-                                    <el-tooltip :content="row.periodical_description || '暂无期刊描述'" placement="bottom"
-                                        :effect="row.periodical_description ? 'dark' : 'dark'"
-                                        popper-class="custom-tooltip">
-                                        <el-link type="primary" @click="handlePeriodicalClick(row)">
-                                            {{ row.name }}
-                                        </el-link>
-                                    </el-tooltip>
+                                    <div class="journal-title-cell">
+                                        <el-tooltip :content="row.periodical_description || '点击查看期刊详情'" placement="bottom"
+                                            effect="dark" popper-class="custom-tooltip">
+                                            <span class="journal-link" :class="{ 'is-hidden-title': row.is_hidden }" @click="handlePeriodicalClick(row)">
+                                                {{ row.name }}
+                                            </span>
+                                        </el-tooltip>
+                                        <div class="journal-meta-badges">
+                                            <span v-if="row.is_hidden" class="mini-badge amber-hidden">已隐藏</span>
+                                            <span v-if="row.is_warp" class="mini-badge emerald">全包</span>
+                                            <span v-if="row.invoice_receipt" class="mini-badge sky">可开发票</span>
+                                            <span
+                                                v-for="colName in getCollections(row.categorizes)"
+                                                :key="colName"
+                                                class="mini-badge slate"
+                                            >
+                                                {{ colName }}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </template>
                             </el-table-column>
 
-                            <el-table-column label="期刊级别" show-overflow-tooltip>
+                            <el-table-column label="期刊级别" width="125" show-overflow-tooltip>
                                 <template #default="{ row }">
-                                    {{ getPeriodicalLevel(row.categorizes) }}
+                                    <span
+                                        v-if="getPeriodicalLevel(row.categorizes)"
+                                        class="level-pill"
+                                        :class="getLevelBadgeClass(getPeriodicalLevel(row.categorizes))"
+                                    >
+                                        {{ getPeriodicalLevel(row.categorizes) }}
+                                    </span>
+                                    <span v-else class="empty-dash">-</span>
                                 </template>
                             </el-table-column>
-                            <el-table-column label="期刊页码" prop="periodical_page" sortable="custom"
+
+                            <el-table-column label="期刊页码" prop="periodical_page" width="115" sortable="custom"
                                 show-overflow-tooltip>
                                 <template #default="{ row }">
-                                    <span v-if="row.periodical_page">{{ row.periodical_page }}页</span>
-                                </template>
-                            </el-table-column>
-                            <!-- <el-table-column prop="publish_time" sortable="custom" label="出刊时间" show-overflow-tooltip>
-                                <template #default="{ row }">
-                                    {{ formatDate(row.publication_time) }}
-                                </template>
-                            </el-table-column> -->
-                            <el-table-column prop="publish_time" sortable="custom" label="出刊时间" show-overflow-tooltip>
-                                <template #default="{ row }">
-                                    {{ formatDate(row.publication_time) }}
-                                </template>
-                            </el-table-column>
-                            <el-table-column prop="price" label="期刊发表费" sortable="custom" show-overflow-tooltip>
-                                <template #default="{ row }">
-                                    <!-- ¥{{ row.price.toFixed(2) }} -->
-                                    ¥{{ row.price }}
+                                    <span v-if="row.periodical_page" class="page-chip">{{ row.periodical_page }} 页</span>
+                                    <span v-else class="empty-dash">-</span>
                                 </template>
                             </el-table-column>
 
-                            <el-table-column prop="updated_at" label="更新时间" sortable="custom" show-overflow-tooltip>
+                            <el-table-column prop="publish_time" sortable="custom" label="出刊时间" width="145" show-overflow-tooltip>
                                 <template #default="{ row }">
-                                    {{ formatTimestamp(row.updated_at) }}
+                                    <span v-if="formatDate(row.publication_time)" class="date-chip">
+                                        {{ formatDate(row.publication_time) }}
+                                    </span>
+                                    <span v-else class="empty-dash">-</span>
                                 </template>
                             </el-table-column>
-                            <el-table-column label="操作" width="120">
+
+                            <el-table-column prop="price" label="期刊发表费" width="155" sortable="custom" show-overflow-tooltip>
+                                <template #default="{ row }">
+                                    <span v-if="row.price && String(row.price) !== '0'" class="price-text">
+                                        <em class="currency">¥</em>{{ row.price }}
+                                    </span>
+                                    <span v-else class="price-muted">待询</span>
+                                </template>
+                            </el-table-column>
+
+                            <el-table-column prop="updated_at" label="更新时间" width="165" sortable="custom" show-overflow-tooltip>
+                                <template #default="{ row }">
+                                    <span class="time-muted">{{ formatTimestamp(row.updated_at) || '-' }}</span>
+                                </template>
+                            </el-table-column>
+
+                            <el-table-column v-if="userStore.hasPermission('periodical:update')" label="是否隐藏" width="105" align="center">
+                                <template #default="{ row }">
+                                    <el-switch
+                                        :model-value="Boolean(row.is_hidden)"
+                                        :loading="Boolean(hiddenLoadingMap[row.periodical_id])"
+                                        inline-prompt
+                                        active-text="隐藏"
+                                        inactive-text="正常"
+                                        style="--el-switch-on-color: #f59e0b; --el-switch-off-color: #cbd5e1;"
+                                        @change="(val: any) => handleToggleHidden(row, Boolean(val))"
+                                    />
+                                </template>
+                            </el-table-column>
+
+                            <el-table-column label="操作" width="160" align="center" fixed="right">
                                 <template #default="{ row }">
                                     <div class="operation-wrapper">
-                                        <el-tooltip content="查看详情" placement="top">
-                                            <el-icon class="operation-icon" @click="handleView(row)">
-                                                <View />
-                                            </el-icon>
+                                        <el-tooltip content="查看详情" placement="top" :show-after="300">
+                                            <button type="button" class="action-icon-btn view" @click="handleView(row)">
+                                                <el-icon><View /></el-icon>
+                                            </button>
                                         </el-tooltip>
-                                        <span class="operation-divider"></span>
-                                        <el-tooltip content="复制期刊描述" placement="top">
-                                            <el-icon class="operation-icon" @click="handleCopy(row)">
-                                                <DocumentCopy />
-                                            </el-icon>
+                                        <el-tooltip v-if="userStore.hasPermission('periodical:copy')" content="复制期刊信息" placement="top" :show-after="300">
+                                            <button
+                                                type="button"
+                                                class="action-icon-btn copy"
+                                                @click="handleCopy(row)"
+                                            >
+                                                <el-icon><DocumentCopy /></el-icon>
+                                            </button>
                                         </el-tooltip>
-                                        <!-- 管理员才能看到的操作按钮 -->
-                                        <template v-if="userStore.loginUser.role === 1">
-                                            <span class="operation-divider"></span>
-                                            <el-tooltip content="删除" placement="top">
-                                                <el-icon class="operation-icon" @click="handleDelete(row)">
-                                                    <Delete />
-                                                </el-icon>
-                                            </el-tooltip>
-                                            <span class="operation-divider"></span>
-                                            <el-tooltip content="编辑期刊" placement="top">
-                                                <el-icon class="operation-icon" @click="handleEdit(row)">
-                                                    <Edit />
-                                                </el-icon>
-                                            </el-tooltip>
-                                        </template>
+                                        <el-tooltip v-if="userStore.hasPermission('periodical:update')" content="编辑期刊" placement="top" :show-after="300">
+                                            <button
+                                                type="button"
+                                                class="action-icon-btn edit"
+                                                @click="handleEdit(row)"
+                                            >
+                                                <el-icon><Edit /></el-icon>
+                                            </button>
+                                        </el-tooltip>
+                                        <el-tooltip v-if="userStore.hasPermission('periodical:delete')" content="删除期刊" placement="top" :show-after="300">
+                                            <button
+                                                type="button"
+                                                class="action-icon-btn delete"
+                                                @click="handleDelete(row)"
+                                            >
+                                                <el-icon><Delete /></el-icon>
+                                            </button>
+                                        </el-tooltip>
                                     </div>
                                 </template>
                             </el-table-column>
@@ -498,7 +555,7 @@
                                 </el-col>
 
                                 <!-- 第十行 -->
-                                <el-col :span="8">
+                                <el-col :span="6">
                                     <el-form-item label="社内发票" prop="invoice_receipt">
                                         <el-radio-group v-model="addForm.invoice_receipt">
                                             <el-radio :value=1>可开取</el-radio>
@@ -506,7 +563,7 @@
                                         </el-radio-group>
                                     </el-form-item>
                                 </el-col>
-                                <el-col :span="8">
+                                <el-col :span="6">
                                     <el-form-item label="是否全包" prop="is_warp">
                                         <el-radio-group v-model="addForm.is_warp">
                                             <el-radio :value=1>是</el-radio>
@@ -514,11 +571,19 @@
                                         </el-radio-group>
                                     </el-form-item>
                                 </el-col>
-                                <el-col :span="8">
+                                <el-col :span="6">
                                     <el-form-item label="可发作品" prop="works">
                                         <el-radio-group v-model="addForm.works">
                                             <el-radio :value=1>是</el-radio>
                                             <el-radio :value=0>否</el-radio>
+                                        </el-radio-group>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-form-item label="是否隐藏" prop="is_hidden">
+                                        <el-radio-group v-model="addForm.is_hidden">
+                                            <el-radio :value=0>正常显示</el-radio>
+                                            <el-radio :value=1>隐藏</el-radio>
                                         </el-radio-group>
                                     </el-form-item>
                                 </el-col>
@@ -613,7 +678,7 @@
                                 <span class="value">{{ detailData.founding_time }}年</span>
                             </div>
                             <div class="detail-item">
-                                <span class="label">期刊周期：</span>
+                                <span class="label">出版周期：</span>
                                 <span class="value">{{ getPeriodicalCycle(detailData.categorizes) }}</span>
                             </div>
                             <div class="detail-item">
@@ -643,6 +708,13 @@
                             <div class="detail-item">
                                 <span class="label">是否可开杂志社发票：</span>
                                 <span class="value">{{ detailData.invoice_receipt ? '是' : '否' }}</span>
+                            </div>
+                            <div v-if="userStore.hasPermission('periodical:update')" class="detail-item">
+                                <span class="label">隐藏状态：</span>
+                                <span class="value">
+                                    <span v-if="detailData.is_hidden" style="color: #d97706; font-weight: 600;">已隐藏（AI默认检索已屏蔽）</span>
+                                    <span v-else style="color: #059669;">正常显示</span>
+                                </span>
                             </div>
                         </div>
                         <div class="detail-column right-column">
@@ -776,18 +848,34 @@
                 </div>
             </template>
         </el-dialog>
+
+        <!-- 右下角灵动 AI 期刊伴随助手气泡 -->
+        <AiCopilotBubble
+            @refresh-list="getPeriodicalList"
+            @sync-filter="handleAiSyncFilter"
+            @fill-drawer="handleAiFillDrawer"
+            @select-journal="handleAiSelectJournal"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { reqCategorizeList, reqPeriodicalList, reqPeriodicalDetail, reqCreatePeriodical, reqDeletePeriodical, reqUpdatePeriodical } from '@/api/periodical';
+import { onMounted, onActivated, reactive, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import { reqCategorizeList, reqPeriodicalList, reqPeriodicalDetail, reqCreatePeriodical, reqDeletePeriodical, reqUpdatePeriodical, reqUpdatePeriodicalHidden } from '@/api/periodical';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { View, DocumentCopy, CopyDocument, Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs' // 需要先安装 dayjs: npm install dayjs
 import useUserStore from '@/store/modules/user';
 import router from '@/router';
+import AiCopilotBubble from '@/components/AiCopilotBubble/index.vue';
+import { copyTextToClipboard } from '@/utils/clipboard';
 
+defineOptions({
+    name: 'PeriodicalManage',
+})
+
+const route = useRoute()
 const userStore = useUserStore()
 
 let categorizeListParams = reactive<any>({
@@ -844,6 +932,10 @@ const checkedAcademicJournals = ref<number[]>([])
 const canIssueInvoice = ref<number[]>([])
 // 复合影响因子
 const compositeImpactFactor = ref<number | null>(null)  // 初始值可以为 null
+// 隐藏状态筛选：0 全部，2 未隐藏，1 已隐藏
+const hiddenFilter = ref<number>(0)
+// 行内切换隐藏状态的 Loading 映射
+const hiddenLoadingMap = reactive<Record<number, boolean>>({})
 
 
 // 定义默认值   文章命名、发表流程、全包流程、内部流程 新增时的默认值
@@ -1035,6 +1127,44 @@ const handleCompositeImpactFactorChange = (value: number) => {
     handleSearch(); // 假设您有一个搜索函数
 }
 
+// 隐藏状态筛选变化
+const handleHiddenFilterChange = () => {
+    handleSearch()
+}
+
+// 表格行样式（已隐藏的期刊柔和视觉区分）
+const getTableRowClassName = ({ row }: { row: any }) => {
+    return row?.is_hidden ? 'row-is-hidden' : ''
+}
+
+// 行内一键切换期刊是否隐藏
+const handleToggleHidden = async (row: any, targetHidden: boolean) => {
+    if (!row || !row.periodical_id) return
+    hiddenLoadingMap[row.periodical_id] = true
+    try {
+        const res = await reqUpdatePeriodicalHidden(row.periodical_id, targetHidden)
+        if (res.code === 200) {
+            row.is_hidden = targetHidden
+            row.updated_at = Math.floor(Date.now() / 1000)
+            ElMessage.success(
+                targetHidden
+                    ? `已将 ${row.name} 设为隐藏（AI 日常检索将自动过滤）`
+                    : `已取消隐藏，${row.name} 已恢复正常显示`,
+            )
+            // 若当前正在按“未隐藏”或“已隐藏”过滤视图，立即刷新列表保持一致
+            if (hiddenFilter.value === 1 || hiddenFilter.value === 2) {
+                getPeriodicalList()
+            }
+        } else {
+            ElMessage.error(res.message || '更新隐藏状态失败')
+        }
+    } catch {
+        ElMessage.error('更新隐藏状态失败')
+    } finally {
+        hiddenLoadingMap[row.periodical_id] = false
+    }
+}
+
 // 获取分类列表
 const getCategorizeList = async () => {
     let result = await reqCategorizeList(categorizeListParams)
@@ -1142,6 +1272,9 @@ const handleSearch = () => {
         periodicalListParams.composite_influence_factor = 0
     }
 
+    // 隐藏状态筛选（0-全部，2-未隐藏，1-已隐藏）
+    periodicalListParams.is_hidden = hiddenFilter.value || 0
+
     getPeriodicalList()
 }
 
@@ -1193,11 +1326,15 @@ const handleReset = () => {
     // 重置复合影响因子
     compositeImpactFactor.value = null
 
+    // 重置隐藏状态筛选
+    hiddenFilter.value = 0
+
     // 重置查询参数
     periodicalListParams.has_base_type_list = []
     periodicalListParams.works = null
     periodicalListParams.is_warp = null
     periodicalListParams.invoice = null
+    periodicalListParams.is_hidden = 0
     periodicalListParams.periodical_batch = []
     periodicalListParams.composite_influence_factor = 0
 
@@ -1288,29 +1425,17 @@ const getPeriodicalCycle = (categorizes: any[]) => {
     return cycleItem ? cycleItem.name : ''
 }
 
-// 统一的复制方法
-const copyToClipboard = (text: string) => {
+// 统一的复制方法（兼容 HTTPS 与 HTTP 非安全上下文及 el-dialog 焦点锁定）
+const copyToClipboard = async (text: string) => {
     if (!text) {
         ElMessage.warning('暂无内容可复制')
         return
     }
 
-    try {
-        // 创建临时文本区域
-        const textarea = document.createElement('textarea')
-        textarea.value = text
-        // 设置样式使其不可见
-        textarea.style.position = 'fixed'
-        textarea.style.opacity = '0'
-        document.body.appendChild(textarea)
-        // 选择并复制
-        textarea.select()
-        document.execCommand('copy')
-        // 清理
-        document.body.removeChild(textarea)
+    const ok = await copyTextToClipboard(text)
+    if (ok) {
         ElMessage.success('复制成功')
-    } catch (err) {
-        console.error('复制失败:', err)
+    } else {
         ElMessage.error('复制失败')
     }
 }
@@ -1409,6 +1534,25 @@ const getPeriodicalLevel = (categorizes: any[]) => {
     return levelItem ? levelItem.name : ''
 }
 
+// 获取期刊收录网站列表（用于表格微徽标展示，最多取前3个）
+const getCollections = (categorizes: any[]): string[] => {
+    if (!categorizes || !Array.isArray(categorizes)) return []
+    return categorizes
+        .filter(item => item.type === 3 && item.name)
+        .map(item => item.name)
+        .slice(0, 3)
+}
+
+// 根据期刊级别返回语义化胶囊类名
+const getLevelBadgeClass = (levelName: string): string => {
+    if (!levelName) return 'level-default'
+    if (levelName.includes('国家') || levelName.includes('核心')) return 'level-national'
+    if (levelName.includes('国际') || levelName.includes('SCI') || levelName.includes('EI')) return 'level-intl'
+    if (levelName.includes('学报') || levelName.includes('学术')) return 'level-academic'
+    if (levelName.includes('省')) return 'level-provincial'
+    return 'level-default'
+}
+
 // 格式化时间戳
 const formatTimestamp = (timestamp: number): string => {
     if (!timestamp) return ''
@@ -1465,10 +1609,36 @@ const formatAttentionMatter = (text: string): string => {
     return text.replace(/\n/g, '<br>')
 }
 
+// 检查是否携带来自 AI 工作台的一次性联动筛选参数
+const checkRouteAiFilter = () => {
+    if (route.query.from_ai === '1') {
+        if (typeof route.query.name === 'string') {
+            searchForm.name = route.query.name
+        }
+        if (typeof route.query.competent_unit === 'string') {
+            searchForm.competent_unit = route.query.competent_unit
+        }
+        if (typeof route.query.organization === 'string') {
+            searchForm.organization = route.query.organization
+        }
+        handleSearch()
+        router.replace({ path: '/periodical', query: {} })
+        return true
+    }
+    return false
+}
+
 // 组件挂载完毕钩子
 onMounted(() => {
     getCategorizeList()  // 页面挂载时候获取分类列表
-    getPeriodicalList()
+    if (!checkRouteAiFilter()) {
+        getPeriodicalList()
+    }
+})
+
+// Keep-Alive 激活钩子：普通切回标签时保留用户筛选与弹窗状态；若从 AI 工作台带参数跳转则联动筛选
+onActivated(() => {
+    checkRouteAiFilter()
 })
 
 // 复制文本到剪贴板
@@ -1569,6 +1739,7 @@ const addForm = reactive({
     composite_influence_factor: '', //复合影响因子
     synthetic_influence_factor: '', // 综合影响因子
     works: Number(0), // 可发作品
+    is_hidden: Number(0), // 是否隐藏
     periodical_batch: Number(0), // 期刊批次
     periodical_id: '', //期刊ID
     periodical_final_proof: '', // 期刊清样
@@ -1600,6 +1771,7 @@ const addFormSubmit = reactive<any>({
     composite_influence_factor: '', //复合影响因子
     synthetic_influence_factor: '', // 综合影响因子
     works: false, // 可发作品
+    is_hidden: false, // 是否隐藏
     periodical_batch: '', // 期刊批次
     periodical_final_proof: '', // 期刊清样
     author_info: '',  // 作者数量于样刊相关
@@ -1676,7 +1848,8 @@ const handleAdd = () => {
         is_warp: '', // 是否全包
         composite_influence_factor: '', //复合影响因子
         synthetic_influence_factor: '', // 综合影响因子
-        works: '', // 可发作品
+        works: 0, // 可发作品
+        is_hidden: 0, // 默认正常显示
         periodical_batch: '', // 期刊批次
         periodical_final_proof: '', // 期刊清样
         author_info: '',  // 作者数量于样刊相关
@@ -1722,6 +1895,7 @@ const handleSubmit = async () => {
             addFormSubmit.invoice_receipt = addForm.invoice_receipt == 1 ? true : false
             addFormSubmit.is_warp = addForm.is_warp == 1 ? true : false
             addFormSubmit.works = addForm.works == 1 ? true : false
+            addFormSubmit.is_hidden = addForm.is_hidden == 1 ? true : false
 
             // 处理浮点数转换
             addFormSubmit.composite_influence_factor = addForm.composite_influence_factor;
@@ -1888,6 +2062,7 @@ const handleEdit = (row: any) => {
     addForm.invoice_receipt = Number(row.invoice_receipt === true || row.invoice_receipt === 1 ? 1 : 0);
     addForm.is_warp = Number(row.is_warp === true || row.is_warp === 1 ? 1 : 0);
     addForm.works = Number(row.works === true || row.works === 1 ? 1 : 0);
+    addForm.is_hidden = Number(row.is_hidden === true || row.is_hidden === 1 ? 1 : 0);
 
     addForm.attention_matter = row.attention_matter;
     addForm.column_setting = row.column_setting;
@@ -1904,43 +2079,164 @@ const handleEdit = (row: any) => {
     isEditing.value = true; // 设置为编辑模式
 }
 
+// ===== AI 伴随助手双向联动处理函数 =====
+
+// 1. 将 AI 解析出的自然语言筛选条件一键同步到左侧多维筛选栏与顶部搜索框
+const handleAiSyncFilter = (filterPayload: Record<string, any>) => {
+    if (!filterPayload) return
+    searchForm.name = filterPayload.name || ''
+    searchForm.competent_unit = filterPayload.competent_unit || ''
+    searchForm.organization = filterPayload.organization || ''
+    searchForm.domestic_number = filterPayload.domestic_number || ''
+    searchForm.column_setting = filterPayload.column_setting || ''
+
+    if (filterPayload.publish_month) {
+        searchForm.publish_month = filterPayload.publish_month
+        const mDate = dayjs(filterPayload.publish_month)
+        searchForm.publish_time_start = mDate.startOf('month').format('YYYY-MM-DD')
+        searchForm.publish_time_end = mDate.endOf('month').format('YYYY-MM-DD')
+    }
+
+    canIssueInvoice.value = filterPayload.invoice === 1 ? [1] : []
+    periodicalListParams.invoice = filterPayload.invoice || 3
+
+    if (filterPayload.is_warp === 1) {
+        isWrap.value = true
+        periodicalListParams.is_warp = 1
+    } else {
+        isWrap.value = null
+        periodicalListParams.is_warp = 3
+    }
+
+    if (filterPayload.works === 1) {
+        canPublishWorks.value = true
+        periodicalListParams.works = 1
+    } else {
+        canPublishWorks.value = null
+        periodicalListParams.works = 3
+    }
+
+    if (filterPayload.is_hidden === 1 || filterPayload.is_hidden === 2) {
+        hiddenFilter.value = filterPayload.is_hidden
+        periodicalListParams.is_hidden = filterPayload.is_hidden
+    } else {
+        hiddenFilter.value = 0
+        periodicalListParams.is_hidden = 0
+    }
+
+    const baseList = Array.isArray(filterPayload.has_base_type_list) ? filterPayload.has_base_type_list : []
+    checkedCities.value = baseList.filter((item: any) => item.type === 1)
+    checkedLevels.value = baseList.filter((item: any) => item.type === 2)
+    checkedCollection.value = baseList.filter((item: any) => item.type === 3)
+    checkedCycles.value = baseList.filter((item: any) => item.type === 4)
+    periodicalListParams.has_base_type_list = baseList
+
+    currentPage.value = 1
+    getPeriodicalList()
+    ElMessage.success('已将 AI 筛选条件同步至左侧多维面板并刷新列表')
+}
+
+// 2. 将 AI 从非结构化文本提取出的 20+ 个期刊字段自动预填进“新增期刊”抽屉
+const handleAiFillDrawer = (formPayload?: Record<string, any>) => {
+    if (!formPayload) return
+    handleAdd()
+    addForm.name = formPayload.name || ''
+    addForm.directions = Array.isArray(formPayload.directions) ? formPayload.directions : []
+    addForm.collections = Array.isArray(formPayload.collections) ? formPayload.collections : []
+    addForm.levels = Array.isArray(formPayload.levels) ? formPayload.levels : []
+    addForm.cycle = formPayload.cycle || ''
+    addForm.organization = formPayload.organization || ''
+    addForm.competent_unit = formPayload.competent_unit || ''
+    addForm.domestic_number = formPayload.domestic_number || ''
+    addForm.international_number = formPayload.international_number || ''
+    addForm.audit_time = formPayload.audit_time || ''
+    addForm.citation_rate = formPayload.citation_rate || ''
+    addForm.publish_date = formPayload.publication_time || ''
+    addForm.founding_time = formPayload.founding_time || ''
+    addForm.column_setting = formPayload.column_setting || ''
+    addForm.invoice_receipt = formPayload.invoice_receipt ? 1 : 0
+    addForm.is_warp = formPayload.is_warp ? 1 : 0
+    addForm.works = formPayload.works ? 1 : 0
+    addForm.is_hidden = formPayload.is_hidden ? 1 : 0
+    addForm.price = formPayload.price || ''
+    addForm.periodical_page = formPayload.periodical_page || ''
+    addForm.composite_influence_factor = formPayload.composite_influence_factor || ''
+    addForm.synthetic_influence_factor = formPayload.synthetic_influence_factor || ''
+    addForm.periodical_description = formPayload.periodical_description || ''
+    addForm.attention_matter = formPayload.attention_matter || ''
+    addForm.author_info = formPayload.author_info || ''
+    ElMessage.success('已将 AI 提取的期刊信息填入新增抽屉，请核对后点击确定提交')
+}
+
+// 3. 点击 AI 卡片中的期刊项直接打开详情弹窗
+const handleAiSelectJournal = (item: any) => {
+    if (!item || !item.periodical_id) return
+    handleView({ periodical_id: item.periodical_id })
+}
+
 </script>
 
 <style scoped lang="scss">
 .periodical-page {
     width: 100%;
-
 }
 
 .column {
     width: 100%;
     height: 100%;
     display: flex;
+    gap: 16px;
+    align-items: flex-start;
 
     .column-left {
-        width: 275px;
-        height: 100%;
-        padding: 10px;
-        background: #fff;
-        border-right: 1px solid #e4e7ed;
+        width: 288px;
+        flex-shrink: 0;
+        padding: 16px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+
+        .filter-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid #f1f5f9;
+
+            .panel-title {
+                font-size: 14px;
+                font-weight: 700;
+                color: #0f172a;
+                letter-spacing: -0.01em;
+            }
+        }
+
+        .date-filter-box {
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 8px;
+            padding: 10px 10px 2px;
+        }
 
         .form-label {
             display: block;
-            margin-bottom: 8px;
-            color: #606266;
-            font-size: 14px;
+            margin-bottom: 5px;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 600;
         }
 
         .el-form {
             .el-row {
-                margin-bottom: 20px;
+                margin-bottom: 8px;
             }
 
             .el-form-item {
                 margin-bottom: 0;
 
                 :deep(.el-form-item__content) {
-
                     .month-picker,
                     .period-select {
                         width: 100%;
@@ -1950,38 +2246,109 @@ const handleEdit = (row: any) => {
         }
 
         .direction-wrapper {
-            margin-top: 16px;
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+
+            &.compact-dual-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+
+                .dual-col {
+                    background: #f8fafc;
+                    border: 1px solid #f1f5f9;
+                    border-radius: 8px;
+                    padding: 8px 10px;
+
+                    .direction-header {
+                        margin-bottom: 4px;
+                    }
+
+                    :deep(.el-radio-group) {
+                        display: flex;
+                        gap: 10px;
+                    }
+
+                    :deep(.el-radio) {
+                        margin-right: 0;
+                        height: 24px;
+                    }
+                }
+            }
 
             .direction-header {
                 display: flex;
                 align-items: center;
-                margin-bottom: 16px;
-                margin-right: 30px;
+                margin-bottom: 8px;
                 justify-content: space-between;
 
                 .direction-title {
-                    font-size: 16px;
-                    font-weight: 500;
-                    color: #333;
-                    margin-right: 12px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #0f172a;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+
+                    &::before {
+                        content: '';
+                        width: 3px;
+                        height: 12px;
+                        border-radius: 2px;
+                        background: #2563eb;
+                    }
+
+                    .count-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-width: 18px;
+                        height: 18px;
+                        padding: 0 5px;
+                        border-radius: 999px;
+                        background: #eff6ff;
+                        color: #2563eb;
+                        font-size: 11px;
+                        font-weight: 700;
+                    }
                 }
 
                 .check-all {
                     margin-bottom: 0;
+                    height: 22px;
+
+                    :deep(.el-checkbox__label) {
+                        font-size: 12px;
+                        color: #64748b;
+                    }
                 }
             }
 
             .direction-group {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 12px;
+                gap: 4px 6px;
 
                 .direction-item {
-                    width: calc(50% - 6px);
+                    width: calc(50% - 3px);
                     margin-right: 0;
+                    padding: 0 6px;
+                    border-radius: 6px;
+                    transition: all 0.15s ease;
+
+                    &:hover {
+                        background-color: #f8fafc;
+                    }
+
+                    &.is-checked {
+                        background-color: #eff6ff;
+                    }
 
                     :deep(.el-checkbox__label) {
                         width: 100%;
+                        font-size: 12.5px;
+                        color: #475569;
                     }
 
                     .checkbox-label {
@@ -1994,7 +2361,7 @@ const handleEdit = (row: any) => {
                 }
 
                 :deep(.el-checkbox) {
-                    height: 32px;
+                    height: 28px;
                     margin-right: 0;
                 }
             }
@@ -2003,26 +2370,99 @@ const handleEdit = (row: any) => {
 
     .column-right {
         flex-grow: 1;
-        padding: 20px;
-        width: calc(100% - 275px);
-        background: #fff;
+        min-width: 0;
+        padding: 20px 22px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 
         .search-form {
-            padding: 20px;
-            background: #f5f7fa;
-            border-radius: 4px;
-            margin-bottom: 20px;
+            padding: 16px 18px;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            margin-bottom: 18px;
+
+            :deep(.el-form-item) {
+                margin-bottom: 0;
+                width: 100%;
+
+                .el-form-item__label {
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #334155;
+                }
+
+                .el-input {
+                    width: 100%;
+                }
+            }
+
+            .search-actions {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 8px;
+
+                .expand-toggle {
+                    margin-left: 2px;
+                    font-weight: 500;
+                }
+            }
+
+            .expanded-search-row {
+                margin-top: 14px;
+                padding-top: 14px;
+                border-top: 1px dashed #cbd5e1;
+            }
+        }
+
+        .table-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+
+            .toolbar-left {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+
+                .table-title {
+                    margin: 0;
+                    font-size: 15px;
+                    font-weight: 700;
+                    color: #0f172a;
+                    letter-spacing: -0.01em;
+                }
+
+                .total-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 2px 10px;
+                    border-radius: 999px;
+                    background: #f1f5f9;
+                    border: 1px solid #e2e8f0;
+                    font-size: 12px;
+                    color: #64748b;
+
+                    strong {
+                        color: #2563eb;
+                        font-weight: 700;
+                        font-variant-numeric: tabular-nums;
+                    }
+                }
+            }
         }
 
         .pagination-container {
-            margin-top: 20px;
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid #f1f5f9;
             display: flex;
             justify-content: flex-end;
-        }
-
-        .operation-bar {
-            margin: 16px 0;
-            padding: 0 20px;
         }
 
         .drawer-form {
@@ -2033,6 +2473,8 @@ const handleEdit = (row: any) => {
 
                 .el-form-item__label {
                     pointer-events: none;
+                    font-weight: 500;
+                    color: #334155;
                 }
 
                 .el-date-editor,
@@ -2048,27 +2490,283 @@ const handleEdit = (row: any) => {
         }
 
         .drawer-footer {
-            padding: 10px 20px;
+            padding: 12px 20px;
             text-align: right;
+            border-top: 1px solid #e2e8f0;
         }
     }
 }
 
-.operation-wrapper {
+/* 表格内部高级排版样式 */
+.table-container {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+
+    :deep(.el-table) {
+        --el-table-border-color: #f1f5f9;
+        --el-table-header-bg-color: #f8fafc;
+        --el-table-row-hover-bg-color: #f1f5f9;
+
+        th.el-table__cell {
+            background-color: #f8fafc !important;
+            color: #475569;
+            font-weight: 600;
+            font-size: 12.5px;
+            height: 44px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        td.el-table__cell {
+            padding: 11px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        tr.row-is-hidden td.el-table__cell {
+            background-color: #fffbeb !important;
+        }
+
+        &::before {
+            display: none;
+        }
+    }
+}
+
+.journal-title-cell {
     display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 2px 0;
+
+    .journal-link {
+        color: #1e293b;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: color 0.15s ease;
+        width: fit-content;
+
+        &:hover {
+            color: #2563eb;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        &.is-hidden-title {
+            color: #64748b;
+        }
+    }
+
+    .journal-meta-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+
+        .mini-badge {
+            display: inline-flex;
+            align-items: center;
+            height: 18px;
+            padding: 0 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1;
+
+            &.amber-hidden {
+                background: #fef3c7;
+                color: #b45309;
+                border: 1px solid #fcd34d;
+                font-weight: 600;
+            }
+
+            &.emerald {
+                background: #ecfdf5;
+                color: #059669;
+                border: 1px solid #a7f3d0;
+            }
+
+            &.sky {
+                background: #f0f9ff;
+                color: #0284c7;
+                border: 1px solid #bae6fd;
+            }
+
+            &.slate {
+                background: #f8fafc;
+                color: #64748b;
+                border: 1px solid #e2e8f0;
+            }
+        }
+    }
+}
+
+.level-pill {
+    display: inline-flex;
     align-items: center;
-    gap: 4px;
-    /* 调整图标之间的间距 */
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+
+    &.level-national {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+    &.level-intl {
+        background: #f5f3ff;
+        color: #6d28d9;
+        border: 1px solid #ddd6fe;
+    }
+
+    &.level-academic {
+        background: #ecfeff;
+        color: #0e7490;
+        border: 1px solid #a5f3fc;
+    }
+
+    &.level-provincial {
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+    }
+
+    &.level-default {
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
 }
 
-.operation-icon {
+.page-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 12.5px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.date-chip {
+    display: inline-block;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.price-text {
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 13.5px;
+    font-variant-numeric: tabular-nums;
+
+    .currency {
+        font-style: normal;
+        font-size: 12px;
+        color: #64748b;
+        margin-right: 2px;
+        font-weight: 500;
+    }
+}
+
+.price-muted {
+    color: #94a3b8;
+    font-size: 12.5px;
+}
+
+.time-muted {
+    color: #64748b;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.empty-dash {
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+.operation-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.action-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 7px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 14px;
     cursor: pointer;
-    font-size: 16px;
-}
+    transition: all 0.16s ease;
+    flex-shrink: 0;
 
-.operation-divider {
-    margin: 0 2px;
-    /* 减小分隔符的间距 */
+    .el-icon {
+        font-size: 14px;
+    }
+
+    &:hover {
+        transform: translateY(-1px);
+    }
+
+    &.view {
+        color: #475569;
+
+        &:hover {
+            color: #0f172a;
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+    }
+
+    &.copy {
+        color: #0284c7;
+        background: #f0f9ff;
+        border-color: #bae6fd;
+
+        &:hover {
+            color: #0369a1;
+            background: #e0f2fe;
+            border-color: #7dd3fc;
+        }
+    }
+
+    &.edit {
+        color: #2563eb;
+        background: #eff6ff;
+        border-color: #bfdbfe;
+
+        &:hover {
+            color: #1d4ed8;
+            background: #dbeafe;
+            border-color: #93c5fd;
+        }
+    }
+
+    &.delete {
+        color: #dc2626;
+        background: #fef2f2;
+        border-color: #fecaca;
+
+        &:hover {
+            color: #b91c1c;
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+    }
 }
 
 .detail-dialog {
@@ -2089,14 +2787,15 @@ const handleEdit = (row: any) => {
 
     .detail-column {
         padding: 20px;
-        border: 1px solid #e4e7ed;
-        border-radius: 4px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
 
         &.left-column {
-            flex: 0 0 320px; // 固定左侧宽度
+            flex: 0 0 320px;
 
             .detail-item {
-                margin-bottom: 16px;
+                margin-bottom: 14px;
 
                 &:last-child {
                     margin-bottom: 0;
@@ -2106,31 +2805,42 @@ const handleEdit = (row: any) => {
 
         &.right-column {
             flex: 1;
-            min-width: 0; // 防止内容溢出
+            min-width: 0;
+            background: #ffffff;
 
             .detail-item {
-                margin-bottom: 12px;
+                margin-bottom: 14px;
+                padding-bottom: 12px;
+                border-bottom: 1px dashed #e2e8f0;
+
+                &:last-child {
+                    border-bottom: none;
+                    margin-bottom: 0;
+                    padding-bottom: 0;
+                }
             }
         }
 
         .detail-item {
-            line-height: 1.6;
+            line-height: 1.65;
 
             &.full-width {
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
+                gap: 6px;
             }
 
             .label {
-                color: #909399; // 更浅的文字颜色
-                font-weight: normal;
+                color: #64748b;
+                font-weight: 600;
+                font-size: 13px;
                 margin-right: 8px;
                 white-space: nowrap;
             }
 
             .value {
-                color: #303133; // 更深的文字颜色
+                color: #0f172a;
+                font-size: 13.5px;
                 word-break: break-all;
                 white-space: pre-wrap;
 
@@ -2146,14 +2856,14 @@ const handleEdit = (row: any) => {
 :deep(.el-dialog) {
     .el-dialog__header {
         margin-right: 0;
-        border-bottom: 1px solid #dcdfe6;
+        border-bottom: 1px solid #e2e8f0;
         padding-bottom: 15px;
     }
 
     .el-dialog__body {
         padding: 24px;
-        max-height: 70vh; // 只添加最大高度
-        overflow-y: auto; // 只添加滚动条
+        max-height: 72vh;
+        overflow-y: auto;
     }
 }
 
@@ -2162,25 +2872,9 @@ const handleEdit = (row: any) => {
     background: #fff;
 }
 
-.detail-container {
-    .detail-column {
-        .detail-item {
-            .value {
-                white-space: pre-wrap;
-                line-height: 1.6;
-
-                :deep(br) {
-                    display: block;
-                    margin: 8px 0;
-                }
-            }
-        }
-    }
-}
-
 .copy-btn {
-    margin-left: 16px; // 文本后的间距
-    padding: 4px 8px;
+    margin-left: 16px;
+    padding: 4px 10px;
     font-size: 13px;
 
     .el-icon {

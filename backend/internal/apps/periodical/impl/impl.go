@@ -2,9 +2,11 @@ package impl
 
 import (
 	"context"
+	"errors"
 	"log"
 	"periodical/conf"
 	"periodical/internal/apps/periodical"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -14,8 +16,23 @@ type PeriodicalImpl struct {
 }
 
 func NewPeriodicalImpl() *PeriodicalImpl {
-	return &PeriodicalImpl{
+	impl := &PeriodicalImpl{
 		db: conf.C().MySQL.GetConn().Debug(),
+	}
+	impl.ensureSchema()
+	return impl
+}
+
+// ensureSchema 启动时幂等检测并补齐 periodicals.is_hidden 列，保障平滑无损升级
+func (i *PeriodicalImpl) ensureSchema() {
+	var count int64
+	err := i.db.Raw(`SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'periodicals' AND COLUMN_NAME = 'is_hidden'`).Scan(&count).Error
+	if err == nil && count == 0 {
+		if alterErr := i.db.Exec(`ALTER TABLE periodicals ADD COLUMN is_hidden tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否隐藏：0-正常显示，1-已隐藏'`).Error; alterErr != nil {
+			log.Printf("自动新增 periodicals.is_hidden 列警告: %v", alterErr)
+		} else {
+			log.Println("已自动平滑补齐 periodicals.is_hidden 字段")
+		}
 	}
 }
 
@@ -144,6 +161,11 @@ func (i *PeriodicalImpl) QueryPeriodical(ctx context.Context, req *periodical.Qu
 	} else if req.IsWarp == 2 {
 		query = query.Where("periodicals.is_warp = '0'")
 	}
+	if req.IsHidden == 1 {
+		query = query.Where("periodicals.is_hidden = 1")
+	} else if req.IsHidden == 2 {
+		query = query.Where("periodicals.is_hidden = 0")
+	}
 	if req.Name != "" {
 		query = query.Where("periodicals.name like ?", "%"+req.Name+"%")
 	}
@@ -204,13 +226,23 @@ func (i *PeriodicalImpl) QueryPeriodical(ctx context.Context, req *periodical.Qu
 
 	// 添加排序条件
 	if req.OrderBy != "" {
-		orderStr := "periodicals." + req.OrderBy
-		if req.OrderDesc == "ascending" {
-			orderStr += " ASC"
-		} else if req.OrderDesc == "descending" {
-			orderStr += " DESC"
+		if req.OrderBy == "price" {
+			// 按发表费数值排序，并将未填写价格（空值或0）排在最后
+			query = query.Order("CASE WHEN periodicals.price IS NULL OR periodicals.price = '' OR CAST(periodicals.price AS UNSIGNED) = 0 THEN 1 ELSE 0 END ASC")
+			if req.OrderDesc == "descending" {
+				query = query.Order("CAST(periodicals.price AS UNSIGNED) DESC")
+			} else {
+				query = query.Order("CAST(periodicals.price AS UNSIGNED) ASC")
+			}
+		} else {
+			orderStr := "periodicals." + req.OrderBy
+			if req.OrderDesc == "ascending" {
+				orderStr += " ASC"
+			} else if req.OrderDesc == "descending" {
+				orderStr += " DESC"
+			}
+			query = query.Order(orderStr)
 		}
-		query = query.Order(orderStr)
 	}
 
 	query = query.Preload("Categorizes") // 使用Preload预加载关联的分类信息
@@ -272,6 +304,9 @@ func (i *PeriodicalImpl) UpdatePeriodical(ctx context.Context, req *periodical.U
 	}
 
 	log.Println("更新。。。。。")
+	if ins.Meta != nil {
+		ins.UpdatedAt = time.Now().Unix()
+	}
 	// 更新期刊信息
 	if err := i.db.Save(ins).Error; err != nil {
 		return nil, err
@@ -300,6 +335,28 @@ func (i *PeriodicalImpl) UpdatePeriodical(ctx context.Context, req *periodical.U
 	}
 
 	return ins, nil
+}
+
+// UpdateHiddenStatus 轻量原子切换期刊隐藏状态（不改动其他字段与分类关联）
+func (i *PeriodicalImpl) UpdateHiddenStatus(ctx context.Context, req *periodical.UpdateHiddenStatusRequest) error {
+	hiddenVal := 0
+	if req.IsHidden {
+		hiddenVal = 1
+	}
+	res := i.db.WithContext(ctx).
+		Model(&periodical.Periodical{}).
+		Where("periodical_id = ?", req.PeriodicalID).
+		Updates(map[string]interface{}{
+			"is_hidden":  hiddenVal,
+			"updated_at": time.Now().Unix(),
+		})
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return errors.New("未找到对应的期刊记录")
+	}
+	return nil
 }
 
 func (i *PeriodicalImpl) DeletePeriodical(ctx context.Context, req *periodical.DeletePeriodicalRequest) error {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/rs/xid"
+	"periodical/internal/apps/role"
 	"periodical/internal/apps/user"
 	"time"
 )
@@ -16,6 +17,8 @@ func NewToken() *Token {
 		RefreshTokenExpiredAt: 3600 * 24 * 7,
 		CreatedAt:             time.Now().Unix(),
 		IsEnable:              1,
+		Roles:                 []*role.Role{},
+		Permissions:           []string{},
 	}
 }
 
@@ -23,15 +26,18 @@ type Token struct {
 	UserId                int64  `json:"user_id"`
 	UserName              string `json:"username" gorm:"column:username"`
 	AccessToken           string `json:"access_token"`             // 颁发给用户的访问令牌
-	AccessTokenExpiredAt  int    `json:"access_token_expired_at"`  // 过期时间（2h） 单位秒
-	RefreshToken          string `json:"refresh_token"`            // 刷新token（）
+	AccessTokenExpiredAt  int    `json:"access_token_expired_at"`  // 过期时间（24h） 单位秒
+	RefreshToken          string `json:"refresh_token"`            // 刷新token
 	RefreshTokenExpiredAt int    `json:"refresh_token_expired_at"` // 刷新token过期时间(7d)
 	CreatedAt             int64  `json:"created_at"`               // 创建时间
 	UpdatedAt             int64  `json:"updated_at"`               // 更新时间
 	IsEnable              int64  `json:"is_enable"`                // 是否有效（1有效，0无效） 默认为1
 
-	// 额外补充信息
-	Role user.Role `json:"role" gorm:"-"`
+	// 额外补充信息（多角色与权限集）
+	Role         user.Role    `json:"role" gorm:"-"`
+	Roles        []*role.Role `json:"roles" gorm:"-"`
+	Permissions  []string     `json:"permissions" gorm:"-"`
+	IsSuperAdmin bool         `json:"is_super_admin" gorm:"-"`
 }
 
 func (t *Token) TableName() string {
@@ -45,7 +51,6 @@ func (t *Token) IsExpired() error {
 		return fmt.Errorf("token %s 过期了 %f秒", t.AccessToken, expiredSeconds)
 	}
 	return nil
-
 }
 
 // ExpiredTime 计算token过期时间
@@ -53,8 +58,20 @@ func (t *Token) ExpiredTime() time.Time {
 	return time.Unix(t.CreatedAt, 0).Add(time.Duration(t.AccessTokenExpiredAt) * time.Second)
 }
 
+// HasPermission 判断当前Token所属用户是否具备指定权限码
+func (t *Token) HasPermission(permCode string) bool {
+	if permCode == "" || t.IsSuperAdmin {
+		return true
+	}
+	for _, code := range t.Permissions {
+		if code == permCode {
+			return true
+		}
+	}
+	return false
+}
+
 func (t *Token) String() string {
 	dj, _ := json.Marshal(t)
 	return string(dj)
-
 }

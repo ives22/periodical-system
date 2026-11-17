@@ -1,36 +1,38 @@
-<!--
- * new pagen
- * @since: 2024-12-01
- * index.vue
--->
 <template>
-    <!-- 路由组件出口的位置 -->
-    <router-view v-slot="{ Component }">
-        <transition name=fade>
-            <!-- 渲染 layout一级路由组件的子路由 -->
-            <component :is="Component" v-if="flag" />
+    <router-view v-slot="{ Component, route }">
+        <transition name="fade" mode="out-in">
+            <keep-alive :include="tagsViewStore.cachedViews">
+                <component :is="Component" :key="route.path" v-if="flag" />
+            </keep-alive>
         </transition>
     </router-view>
 </template>
 
 <script setup lang="ts">
-import { watch, ref, nextTick } from 'vue';
-import useLayOutSettingStore from '@/store/modules/setting';
-let layOutSettingStore = useLayOutSettingStore()
+import { watch, ref, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
+import useLayOutSettingStore from '@/store/modules/setting'
+import useTagsViewStore from '@/store/modules/tagsView'
 
-// 控制当前组件是否销毁重建
-let flag = ref(true);
+const route = useRoute()
+const layOutSettingStore = useLayOutSettingStore()
+const tagsViewStore = useTagsViewStore()
+const flag = ref(true)
 
-// 监听仓库内部数据是否发生了变化，如果发生变化，说明用户点击过刷新按钮
 watch(() => layOutSettingStore.refsh, () => {
-    console.log(123)
-    // 点击刷新按钮：路由组件需要销毁
-    flag.value = false;
+    const targetName = layOutSettingStore.refreshTargetName || (route.name ? String(route.name) : '')
+    if (targetName) {
+        tagsViewStore.delCachedView(targetName)
+    }
+    flag.value = false
     nextTick(() => {
-        flag.value = true;
+        if (targetName && route.meta?.keepAlive !== false) {
+            tagsViewStore.addCachedView(targetName)
+        }
+        layOutSettingStore.refreshTargetName = ''
+        flag.value = true
     })
 })
-
 </script>
 
 <script lang="ts">
@@ -39,19 +41,21 @@ export default {
 }
 </script>
 
-
 <style scoped>
-.fade-enter-from {
+.fade-enter-from,
+.fade-leave-to {
     opacity: 0;
-    transform: scale(0)
+    transform: translateY(6px);
 }
 
-.fade-enter-active {
-    transition: all .3s;
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.fade-enter-to {
+.fade-enter-to,
+.fade-leave-from {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0);
 }
 </style>

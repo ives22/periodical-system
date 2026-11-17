@@ -148,7 +148,166 @@ INSERT INTO `categorizes` (`name`, `type`, `status`, `app_status`, `sort`) VALUE
 INSERT INTO `categorizes` (`name`, `type`, `status`, `app_status`, `sort`) VALUES ('月刊及以上', 4, 1, 0, 302);
 
 
+-- ==========================================
+-- 动态角色与权限管理 (RBAC) 表结构及初始数据
+-- ==========================================
+
+-- 1. 角色表
+CREATE TABLE IF NOT EXISTS `roles` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '角色ID',
+  `name` varchar(64) NOT NULL COMMENT '角色名称',
+  `code` varchar(64) NOT NULL COMMENT '角色唯一编码',
+  `description` varchar(255) DEFAULT '' COMMENT '角色描述',
+  `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态：1-启用，0-禁用',
+  `is_system` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否内置角色：1-是（不可删除），0-否',
+  `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
+  `created_at` int NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `updated_at` int NOT NULL DEFAULT 0 COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_role_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='角色表';
+
+-- 2. 权限资源表（菜单 + 按钮/接口操作）
+CREATE TABLE IF NOT EXISTS `permissions` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '权限ID',
+  `parent_id` int unsigned NOT NULL DEFAULT 0 COMMENT '父级权限ID，0为顶级',
+  `name` varchar(64) NOT NULL COMMENT '权限名称',
+  `code` varchar(100) NOT NULL COMMENT '权限唯一标识码，如 periodical:create',
+  `type` tinyint(1) NOT NULL DEFAULT 1 COMMENT '类型：1-菜单/目录，2-按钮/接口操作',
+  `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
+  `created_at` int NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `updated_at` int NOT NULL DEFAULT 0 COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_perm_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='权限资源表';
+
+-- 3. 角色-权限关联表（多对多）
+CREATE TABLE IF NOT EXISTS `role_permissions` (
+  `role_id` int unsigned NOT NULL COMMENT '角色ID',
+  `permission_id` int unsigned NOT NULL COMMENT '权限ID',
+  PRIMARY KEY (`role_id`, `permission_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='角色权限关联表';
+
+-- 4. 用户-角色关联表（多对多，支持单用户绑定多个角色）
+CREATE TABLE IF NOT EXISTS `user_roles` (
+  `user_id` int unsigned NOT NULL COMMENT '用户ID',
+  `role_id` int unsigned NOT NULL COMMENT '角色ID',
+  PRIMARY KEY (`user_id`, `role_id`),
+  KEY `idx_user_roles_role_id` (`role_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户角色关联表';
+
+-- 初始化默认角色（兼容原枚举：1-管理员，2-普通用户，3-超级管理员）
+INSERT IGNORE INTO `roles` (`id`, `name`, `code`, `description`, `status`, `is_system`, `sort`, `created_at`, `updated_at`) VALUES
+(1, '管理员', 'admin', '业务管理员，负责期刊管理及用户日常维护', 1, 0, 2, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(2, '普通用户', 'author', '普通用户，可查询、浏览期刊详情及复制期刊描述', 1, 0, 3, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(3, '超级管理员', 'super_admin', '系统最高权限管理员，拥有系统全部权限', 1, 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+
+-- 初始化预设权限树
+INSERT IGNORE INTO `permissions` (`id`, `parent_id`, `name`, `code`, `type`, `sort`, `created_at`, `updated_at`) VALUES
+(1, 0, '首页看板', 'dashboard:view', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(2, 0, '期刊管理', 'periodical:view', 1, 2, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(3, 2, '查询与查看详情', 'periodical:query', 2, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(4, 2, '新增期刊', 'periodical:create', 2, 2, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(5, 2, '编辑期刊', 'periodical:update', 2, 3, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(6, 2, '删除期刊', 'periodical:delete', 2, 4, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(7, 2, '复制期刊描述', 'periodical:copy', 2, 5, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(8, 0, '系统管理', 'system:view', 1, 3, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(9, 8, '用户管理', 'user:view', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(10, 9, '查询用户列表', 'user:query', 2, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(11, 9, '新增用户', 'user:create', 2, 2, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(12, 9, '编辑用户/重置密码', 'user:update', 2, 3, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(13, 9, '删除用户', 'user:delete', 2, 4, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(14, 8, '角色与权限管理', 'role:view', 1, 2, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(15, 14, '查询角色与权限树', 'role:query', 2, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(16, 14, '新增角色', 'role:create', 2, 2, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(17, 14, '编辑角色与分配权限', 'role:update', 2, 3, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(18, 14, '删除角色', 'role:delete', 2, 4, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+
+-- 为普通用户 (role_id=2) 分配默认权限：首页、期刊查看、查询详情、复制描述
+INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`) VALUES
+(2, 1), (2, 2), (2, 3), (2, 7);
+
+-- 为管理员 (role_id=1) 分配默认权限：首页、期刊全权限、用户管理全权限、角色查询权限
+INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`) VALUES
+(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7),
+(1, 8), (1, 9), (1, 10), (1, 11), (1, 12), (1, 13),
+(1, 14), (1, 15);
+
+-- 为超级管理员 (role_id=3) 分配所有权限
+INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`) VALUES
+(3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7),
+(3, 8), (3, 9), (3, 10), (3, 11), (3, 12), (3, 13),
+(3, 14), (3, 15), (3, 16), (3, 17), (3, 18);
+
+-- 迁移存量用户的单角色字段到 user_roles 多对多关联表
+INSERT IGNORE INTO `user_roles` (`user_id`, `role_id`)
+SELECT `id`, CASE WHEN `role` IN (1, 2, 3) THEN `role` ELSE 2 END FROM `users`;
+
+-- ==========================================
+-- AI Agent 智能助手与多模型管理表结构及权限
+-- ==========================================
+
+INSERT IGNORE INTO `permissions` (`id`, `parent_id`, `name`, `code`, `type`, `sort`, `created_at`, `updated_at`) VALUES
+(19, 0, 'AI 智能工作台', 'ai:workspace', 1, 3, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(20, 19, 'AI 对话与智能助手', 'ai:chat', 2, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(21, 8, 'AI 模型与审计管理', 'ai:config', 1, 3, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(22, 21, '全员对话审计查看', 'ai:audit', 2, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+
+INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`) VALUES
+(1, 19), (1, 20),
+(2, 19), (2, 20),
+(3, 19), (3, 20), (3, 21), (3, 22);
+
+CREATE TABLE IF NOT EXISTS `ai_model_configs` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `name` varchar(100) NOT NULL COMMENT '渠道显示名称',
+  `provider` varchar(50) NOT NULL COMMENT '供应商标识：qwen/deepseek/openai/custom',
+  `base_url` varchar(255) NOT NULL COMMENT 'API Base URL',
+  `api_key` varchar(255) DEFAULT '' COMMENT 'API密钥',
+  `model_name` varchar(100) NOT NULL COMMENT '模型标识',
+  `system_prompt` text COMMENT '自定义系统提示词',
+  `temperature` decimal(3,2) NOT NULL DEFAULT 0.20 COMMENT '采样温度',
+  `max_tokens` int NOT NULL DEFAULT 4096 COMMENT '最大Token数',
+  `is_default` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否全局默认：1-是，0-否',
+  `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态：1-启用，0-禁用',
+  `remark` varchar(255) DEFAULT '' COMMENT '备注',
+  `created_at` int NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `updated_at` int NOT NULL DEFAULT 0 COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='AI大模型渠道配置表';
+
+CREATE TABLE IF NOT EXISTS `ai_chat_sessions` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `session_id` varchar(64) NOT NULL COMMENT '会话唯一UUID',
+  `user_id` int unsigned NOT NULL COMMENT '所属用户ID',
+  `username` varchar(64) NOT NULL DEFAULT '' COMMENT '所属用户名',
+  `title` varchar(200) NOT NULL DEFAULT '新对话' COMMENT '会话标题',
+  `scene` varchar(32) NOT NULL DEFAULT 'workspace' COMMENT '来源场景：workspace/copilot',
+  `model_name` varchar(100) DEFAULT '' COMMENT '使用模型名',
+  `message_count` int NOT NULL DEFAULT 0 COMMENT '消息总数',
+  `is_pinned` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否置顶',
+  `created_at` int NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `updated_at` int NOT NULL DEFAULT 0 COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_session_id` (`session_id`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='AI对话会话表';
+
+CREATE TABLE IF NOT EXISTS `ai_chat_messages` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `session_id` varchar(64) NOT NULL COMMENT '会话UUID',
+  `user_id` int unsigned NOT NULL COMMENT '所属用户ID',
+  `username` varchar(64) NOT NULL DEFAULT '' COMMENT '所属用户名',
+  `role` varchar(32) NOT NULL COMMENT '角色：user/assistant',
+  `content` longtext COMMENT '消息文本内容',
+  `model_name` varchar(100) DEFAULT '' COMMENT '响应模型名称',
+  `tool_steps` json DEFAULT NULL COMMENT '工具调用步骤记录',
+  `action_card` json DEFAULT NULL COMMENT '结构化交互卡片与确认状态',
+  `created_at` int NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `updated_at` int NOT NULL DEFAULT 0 COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_msg_session_id` (`session_id`),
+  KEY `idx_msg_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='AI对话消息记录表';
 
 
-
--- 创建用户表

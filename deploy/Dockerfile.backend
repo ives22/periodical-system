@@ -1,0 +1,20 @@
+FROM alpine:3.17
+
+ENV LANG=zh_CN.UTF-8 \
+    LC_ALL=zh_CN.UTF-8 \
+    TZ=Asia/Shanghai \
+    GIN_MODE=release
+
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk add --no-cache tzdata ca-certificates && \
+    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone
+
+WORKDIR /app
+
+COPY periodical /app/periodical
+RUN chmod +x /app/periodical && mkdir -p /app/etc
+
+EXPOSE 8000
+
+CMD ["/app/periodical"]

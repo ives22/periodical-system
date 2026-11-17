@@ -1,0 +1,23 @@
+services:
+  periodical-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: periodical-backend:latest
+    container_name: periodical-backend
+    restart: always
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend/etc/config.yaml:/app/etc/config.yaml:ro
+    networks:
+      - mysql_default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+networks:
+  mysql_default:
+    external: true

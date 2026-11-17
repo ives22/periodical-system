@@ -32,5 +32,9 @@ export const reqCreatePeriodical = (data: any) => request.post<any, any>(API.CRE
 // reqUpdatePeriodical 编辑期刊
 export const reqUpdatePeriodical = (id: number, data: any) => request.put<any, any>(API.UPDATE__PERIODICAL_URL + `${id}`, data)
 
+// reqUpdatePeriodicalHidden 轻量切换期刊是否隐藏状态
+export const reqUpdatePeriodicalHidden = (id: number, is_hidden: boolean) =>
+    request.patch<any, any>(API.UPDATE__PERIODICAL_URL + `${id}/hidden`, { is_hidden })
+
 // 删除期刊
 export const reqDeletePeriodical = (id: number) => request.delete<any, any>(API.DELETE_PERIODICAL_URL + `${id}`)

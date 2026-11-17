@@ -15,6 +15,8 @@ type Service interface {
 	DescribePeriodical(context.Context, *DescribePeriodicalRequest) (*Periodical, error)
 	// UpdatePeriodical 更新期刊
 	UpdatePeriodical(context.Context, *UpdatePeriodicalRequest) (*Periodical, error)
+	// UpdateHiddenStatus 切换期刊隐藏状态
+	UpdateHiddenStatus(context.Context, *UpdateHiddenStatusRequest) error
 	// DeletePeriodical 删除期刊
 	DeletePeriodical(context.Context, *DeletePeriodicalRequest) error
 	// QueryCategorize 查询分类列表
@@ -48,6 +50,7 @@ type QueryPeriodicalRequest struct {
 	Organization             string         `json:"organization"`               // 主办单位  根据主办单位搜索
 	Works                    int            `json:"works"`                      // 是否是作品，根据是否是作品搜索 1 搜索 true，2 搜索 false，3 不加该条件搜索
 	IsWarp                   int            `json:"is_warp"`                    // 是否全包，根据是否是全包搜索， 1 搜索 true，2 搜索 false，3 不加该条件搜索
+	IsHidden                 int            `json:"is_hidden"`                  // 是否隐藏：1 仅查已隐藏(true)，2 仅查未隐藏(false)，0/3 查询全部
 	PeriodicalBatch          []int64        `json:"periodical_batch"`           // 期刊批次，1、2  第一批次；第二批次
 	CompositeInfluenceFactor float64        `json:"composite_influence_factor"` // 复合影响因子，根据复合影响因子筛选 -99 表示0以上
 	ColumnSetting            string         `json:"column_setting"`             // 栏目设置搜索
@@ -75,6 +78,18 @@ type DescribePeriodicalRequest struct {
 
 type DeletePeriodicalRequest struct {
 	PeriodicalID string `json:"periodical_id"` // 期刊ID，根据期刊id进行删除
+}
+
+// UpdateHiddenStatusRequest 轻量更新期刊隐藏状态的请求参数
+type UpdateHiddenStatusRequest struct {
+	PeriodicalID string `json:"-"`
+	IsHidden     bool   `json:"is_hidden"`
+}
+
+func NewUpdateHiddenStatusRequest(id string) *UpdateHiddenStatusRequest {
+	return &UpdateHiddenStatusRequest{
+		PeriodicalID: id,
+	}
 }
 
 func NewCreatePeriodicalRequest() *CreatePeriodicalRequest {
