@@ -113,6 +113,7 @@ INSERT INTO `categorizes` (`name`, `type`, `status`, `app_status`, `sort`) VALUE
 INSERT INTO `categorizes` (`name`, `type`, `status`, `app_status`, `sort`) VALUES ('水利水电/电力/地质/自然科学', 1, 1, 0, 16);
 INSERT INTO `categorizes` (`name`, `type`, `status`, `app_status`, `sort`) VALUES ('建筑建材类/机械/工程技术/交通', 1, 1, 0, 17);
 INSERT INTO `categorizes` (`name`, `type`, `status`, `app_status`, `sort`) VALUES ('工业化工/科技类', 1, 1, 0, 18);
+INSERT INTO `categorizes` (`name`, `type`, `status`, `app_status`, `sort`) VALUES ('低价刊物', 1, 1, 0, 19);
 
 
 

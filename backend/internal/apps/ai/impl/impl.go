@@ -1485,7 +1485,12 @@ func (i *AIImpl) execPrepareCreateTool(args map[string]interface{}, allCats []*p
 			continue
 		}
 		for _, cat := range allCats {
-			if strings.Contains(cat.Name, kw) || strings.Contains(kw, cat.Name) {
+			cleanCatName := strings.TrimSuffix(cat.Name, "类")
+			isMatch := strings.Contains(cat.Name, kw) || strings.Contains(kw, cat.Name) || (len([]rune(cleanCatName)) >= 2 && strings.Contains(kw, cleanCatName))
+			if !isMatch && cat.Name == "低价刊物" && (strings.Contains(kw, "低价") || strings.Contains(kw, "便宜")) {
+				isMatch = true
+			}
+			if isMatch {
 				switch cat.Type {
 				case 1:
 					dirIDs = append(dirIDs, cat.CategorizeID)
@@ -2315,7 +2320,11 @@ func (i *AIImpl) runLocalSmartAgent(
 	var matchedCats []string
 	for _, c := range allCats {
 		cleanCat := strings.TrimSuffix(c.Name, "类")
-		if strings.Contains(prompt, c.Name) || (len([]rune(cleanCat)) >= 2 && strings.Contains(prompt, cleanCat)) {
+		isMatched := strings.Contains(prompt, c.Name) || (len([]rune(cleanCat)) >= 2 && strings.Contains(prompt, cleanCat))
+		if !isMatched && c.Name == "低价刊物" && (strings.Contains(prompt, "低价") || strings.Contains(prompt, "便宜")) {
+			isMatched = true
+		}
+		if isMatched {
 			matchedCats = append(matchedCats, c.Name)
 		}
 	}

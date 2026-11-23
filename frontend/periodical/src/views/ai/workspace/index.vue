@@ -1188,6 +1188,7 @@ const quickPrompts = [
 const bottomChips = [
     { label: '🔍 查国家级期刊', prompt: '帮我查询所有国家级期刊', actionMode: 'send' as const },
     { label: '📚 查知网全包刊物', prompt: '帮我找一下知网收录且支持全包的期刊', actionMode: 'send' as const },
+    { label: '💰 查低价刊物', prompt: '帮我查找收稿方向为低价刊物的期刊', actionMode: 'send' as const },
     { label: '➕ 录入新刊', prompt: '', actionMode: 'create_guide' as const },
     { label: '✏️ 修改期刊排期与价格', prompt: '', actionMode: 'modify_guide' as const },
 ]

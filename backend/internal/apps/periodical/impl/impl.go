@@ -23,7 +23,7 @@ func NewPeriodicalImpl() *PeriodicalImpl {
 	return impl
 }
 
-// ensureSchema 启动时幂等检测并补齐 periodicals.is_hidden 列，保障平滑无损升级
+// ensureSchema 启动时幂等检测并补齐 periodicals.is_hidden 列及内置基础分类，保障平滑无损升级
 func (i *PeriodicalImpl) ensureSchema() {
 	var count int64
 	err := i.db.Raw(`SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'periodicals' AND COLUMN_NAME = 'is_hidden'`).Scan(&count).Error
@@ -32,6 +32,19 @@ func (i *PeriodicalImpl) ensureSchema() {
 			log.Printf("自动新增 periodicals.is_hidden 列警告: %v", alterErr)
 		} else {
 			log.Println("已自动平滑补齐 periodicals.is_hidden 字段")
+		}
+	}
+
+	// 幂等补齐「低价刊物」收稿方向分类 (type=1, sort=19)
+	var catCount int64
+	catErr := i.db.Raw(`SELECT COUNT(*) FROM categorizes WHERE name = '低价刊物' AND type = 1`).Scan(&catCount).Error
+	if catErr == nil && catCount == 0 {
+		now := time.Now().Unix()
+		insertSql := `INSERT INTO categorizes (name, type, status, app_status, sort, created_at, updated_at) VALUES ('低价刊物', 1, 1, 0, 19, ?, ?)`
+		if inErr := i.db.Exec(insertSql, now, now).Error; inErr != nil {
+			log.Printf("自动补齐『低价刊物』分类警告: %v", inErr)
+		} else {
+			log.Println("已自动平滑补齐『低价刊物』收稿方向分类")
 		}
 	}
 }
@@ -398,8 +411,8 @@ func (i *PeriodicalImpl) QueryCategorize(ctx context.Context, req *periodical.Qu
 		return nil, err
 	}
 
-	// 分页查询数据
-	err = query.Offset(req.Offset()).Limit(req.PageSize).Find(&set.Items).Error
+	// 分页查询数据（按 type 与 sort 升序排序，保证分类顺序统一有序）
+	err = query.Order("type ASC, sort ASC, categorize_id ASC").Offset(req.Offset()).Limit(req.PageSize).Find(&set.Items).Error
 	if err != nil {
 		return nil, err
 	}
